@@ -20,6 +20,19 @@ function GenerateFiles
 
 }
 
+function CheckDiskSpdFolderParameter
+{
+    param
+    (
+        $parameter
+    )
+
+    if ($parameter.contains("c:"))
+    {
+        throw "Parameter can't contain drive letters, current value is: $parameter"
+    }
+}
+
 function GetRandomSuffixString
 {
     return "$(get-random -Minimum 1000 -Maximum 37381733632)-$([guid]::NewGuid().guid)"
@@ -116,6 +129,8 @@ function DownLoadDiskSpd
         $url
     )
 
+    CheckDiskSpdFolderParameter -parameter $diskSpdFolder
+
     $sb = {
         param
         (
@@ -153,6 +168,8 @@ function RunDiskSpd
         $diskSpdFolder="diskspd",
         $FileSuffix
     )
+    
+    CheckDiskSpdFolderParameter -parameter $diskSpdFolder
 
     $sb = {
         param
@@ -211,6 +228,8 @@ function CollectReports
         $destination,
         $FileSuffix
     )
+        
+    CheckDiskSpdFolderParameter -parameter $diskSpdFolder
 
     foreach ($client in $clients)
     {
@@ -233,6 +252,8 @@ function CleanUpReports
         $diskSpdFolder="diskspd"
     )
 
+    CheckDiskSpdFolderParameter -parameter $diskSpdFolder
+
     foreach ($client in $clients)
     {
         $reportFiles = Get-ChildItem -Path "\\$client\c$\$diskSpdFolder\$client-*.xml"
@@ -248,11 +269,13 @@ function GenerateReport
 {
     param
     (
-        $reportsFolder="c:\diskspd",
+        $reportsFolder="diskspd",
         $FileSuffix
     )
+
+    CheckDiskSpdFolderParameter -parameter $reportsFolder
     
-    $reportFiles = Get-ChildItem -Path (join-path $reportsFolder "*$FileSuffix.xml")
+    $reportFiles = Get-ChildItem -Path (join-path "c:\$reportsFolder" "*$FileSuffix.xml")
     
     $report = @()
 
@@ -386,7 +409,7 @@ CleanUpReports -clients $clients -diskSpdFolder "diskspd"
 # Xml report
 #RunDiskSpd -clients "client-5" -diskSpdParameters "-c10G -d10 -r -w100 -t12 -b8M -Sh -Rxml \\s2d-sofs\Share01" -credential $creds -diskSpdFolder $localDiskSpdFolder -FileSuffix $executionFileSuffix
 # Collect Report
-#CollectReports -clients "client-5" -FileSuffix $executionFileSuffix -destination "C:\diskspd"
+#CollectReports -clients "client-5" -FileSuffix $executionFileSuffix -destination $localDiskSpdFolder"
 
 #--------------
 # All Clients Testing
@@ -394,10 +417,10 @@ CleanUpReports -clients $clients -diskSpdFolder "diskspd"
 $diskSpeedCommandLine = "-c10G -d30 -o3 -r -w100 -t12 -b2M -Sh -W20 -C45 -Rxml \\s2d-sofs\Share01"
 RunDiskSpd -clients $clients -diskSpdParameters $diskSpeedCommandLine -credential $creds -diskSpdFolder $localDiskSpdFolder -FileSuffix $executionFileSuffix
 # Collect Report
-CollectReports -clients $clients -FileSuffix $executionFileSuffix -destination "C:\diskspd"
+CollectReports -clients $clients -FileSuffix $executionFileSuffix -destination $localDiskSpdFolder
 
 # Generate Report
-GenerateReport -reportsFolder "C:\diskspd" -FileSuffix $executionFileSuffix
+GenerateReport -reportsFolder $localDiskSpdFolder -FileSuffix $executionFileSuffix
 
 # If execution fails, remember to run line below anyways, this will delete local copies of the reports
 #remove-item C:\diskspd\*.xml -Force
