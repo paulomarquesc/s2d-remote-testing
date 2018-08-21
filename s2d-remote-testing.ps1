@@ -207,10 +207,14 @@ function RunDiskSpd
             # Creating random file name
             $args[$args.count-1]=[system.io.path]::Combine($args[$args.count-1],"$($env:computername)-$(GetRandomSuffixString).dat")
 
+            # Randomizing start
+            # Wait 5 minutes
+            Start-Sleep -Seconds (Get-Random -Minimum 2 -Maximum 10)
+
             & "c:\$diskSpdFolder\DiskSpd.exe" $args | out-file $reportFile
 
             # Wait 5 minutes
-            Start-Sleep (get-random -Minimum 100 -Maximum 300)
+            Start-Sleep 300
 
         } -ArgumentList $parameters, $diskSpdFolder, $FileSuffix -Authentication Credssp -Credential $credential -EnableNetworkAccess
     }
@@ -355,13 +359,14 @@ $ErrorActionPreference = "Stop"
 Get-Job | Stop-Job
 Get-Job | Remove-Job
 
+
 # Clients
 
 # All VMs to enable CredSSP (must include jumpboxes, clients and S2D Cluster Node server
-$AllServers = @("client-1","client-2","client-3","client-4","client-5","client-6","client-7","client-8","client-9","client-10","jumpbox","s2d-node-1","s2d-node-2","s2d-node-3")
+$AllServers = @("client-1","client-2","client-3","client-4","client-5","client-6","client-7","client-8","client-9","client-10","jumpbox","s2d-node-1","s2d-node-2","s2d-node-3","s2d-node-4","s2d-node-5","s2d-node-6","s2d-node-7","s2d-node-8","s2d-node-9","s2d-node-10","s2d-node-11","s2d-node-12","s2d-node-13","s2d-node-14","s2d-node-15","s2d-node-16")
 
 # All VMs acting as Clientes
-$Clients = @("client-1","client-2","client-3","client-4","client-5")
+$Clients = @("client-1","client-2","client-3","client-4","client-5","client-6","client-7","client-8","client-9","client-10")
 
 # Domain Name
 $domainName = "sofs.local"
@@ -370,7 +375,7 @@ $domainName = "sofs.local"
 $url = "https://raw.githubusercontent.com/paulomarquesc/s2d-remote-testing/master"
 
 # Folder to store (don't add drive, it is hardcoded to c:\)
-$diskSpdFolder = "diskSpd"
+$localDiskSpdFolder = "diskSpd"
 
 # SOFS Share
 $share="\\s2d-sofs\Share01"
@@ -407,17 +412,17 @@ Write-Verbose "Working with file suffix $executionFileSuffix" -Verbose
 #--------------
 # 1 Client Testing
 # Xml report
-#RunDiskSpd -clients "client-5" -diskSpdParameters "-c10G -d10 -r -w100 -t12 -b8M -Sh -Rxml \\s2d-sofs\Share01" -credential $creds -diskSpdFolder $DiskSpdFolder -FileSuffix $executionFileSuffix
+#RunDiskSpd -clients "client-5" -diskSpdParameters "-c10G -d10 -r -w100 -t12 -b8M -Sh -Rxml \\s2d-sofs\Share01" -credential $creds -diskSpdFolder $localDiskSpdFolder -FileSuffix $executionFileSuffix
 # Collect Report
-#CollectReports -clients "client-5" -FileSuffix $executionFileSuffix -destination $DiskSpdFolder"
+#CollectReports -clients "client-5" -FileSuffix $executionFileSuffix -destination $localDiskSpdFolder"
 
 #--------------
 # All Clients Testing
 # Xml report
-#$diskSpeedCommandLine = "-c10G -d30 -r -w100 -t12 -b8M -Sh -W20 -C45 -Rxml \\s2d-sofs\Share01"
-#RunDiskSpd -clients $clients -diskSpdParameters $diskSpeedCommandLine -credential $creds -diskSpdFolder $DiskSpdFolder -FileSuffix $executionFileSuffix
+$diskSpeedCommandLine = "-c10G -d40 -r -w100 -t12 -b8M -Sh -W20 -C45 -Rxml \\s2d-sofs\Share01"
+RunDiskSpd -clients $clients -diskSpdParameters $diskSpeedCommandLine -credential $creds -diskSpdFolder $DiskSpdFolder -FileSuffix $executionFileSuffix
 # Collect Report
-#CollectReports -clients $clients -FileSuffix $executionFileSuffix -destination $DiskSpdFolder
+CollectReports -clients $clients -FileSuffix $executionFileSuffix -destination $DiskSpdFolder
 
 # Generate Report
 GenerateReport -reportsFolder $DiskSpdFolder -FileSuffix $executionFileSuffix
