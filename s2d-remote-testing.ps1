@@ -122,7 +122,7 @@ function DownLoadDiskSpd
                 $diskSpdFolder="diskspd"
             )
            mkdir $diskSpdFolder -force 
-           $url = "https://pmcstorage01.blob.core.windows.net/public/diskspd.exe"
+           $url = "https://<add our public storage here to download diskspd>/diskspd.exe"
            $output = "c:\$diskSpdFolder\diskspd.exe"
            Start-BitsTransfer -Source $url -Destination $output
         } -Arguments $diskSpdFolder
