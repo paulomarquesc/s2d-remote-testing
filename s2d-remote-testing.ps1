@@ -114,23 +114,28 @@ function DownLoadDiskSpd
     )
 
     $sb = {
-        param($client)
+        param(
+            $client,
+            $diskSpdFolder)
     
         Invoke-Command $client {
             param
             (
                 $diskSpdFolder="diskspd"
             )
-           mkdir $diskSpdFolder -force 
-           $url = "https://<add our public storage here to download diskspd>/diskspd.exe"
+
+           mkdir "c:\$diskSpdFolder\" -force 
+           $url = "https://pmcstorage01.blob.core.windows.net/public/diskspd.exe"
            $output = "c:\$diskSpdFolder\diskspd.exe"
            Start-BitsTransfer -Source $url -Destination $output
-        } -Arguments $diskSpdFolder
+
+        } -ArgumentList $diskSpdFolder
     }
 
     $clients | % {Start-Job -Scriptblock $sb -ArgumentList $_, $diskSpdFolder }
     Get-Job | Wait-Job | Receive-Job
 }
+
 function RunDiskSpd
 {
     param
@@ -295,7 +300,7 @@ function GenerateReport
 
 # Clients
 
-$clients = @("client-1","client-2","client-3")
+$clients = @("client-1","client-2","client-3","client-4","client-5","client-6","client-7","client-8","client-9","client-10")
 $domainName = "sofs.local"
 $localDiskSpdFolder = "diskSpd"
 
@@ -306,10 +311,10 @@ $executionFileSuffix = GetRandomSuffixString
 
 $creds = Get-Credential
 
-#EnableCredSSP -clients @("jumpbox","client-1","client-2","client-3","s2d-node-1","s2d-node-2","s2d-node-3") -domainName $domainName 
+#EnableCredSSP -clients $clients -domainName $domainName 
 #AllowFileServerServicesOnClients -clients $clients
 #GenerateFiles -clients $clients -FileSuffix $executionFileSuffix
-#DownLoadDiskSpd -clients $clients -diskSpdFolder "c:\diskspd"
+#DownLoadDiskSpd -clients $clients -diskSpdFolder "diskspd"
 
 #------
 # Notice that the file path on DiskSpd must be only up to the folder leve, the file name will be randomized
@@ -332,4 +337,4 @@ CollectReports -clients $clients -FileSuffix $executionFileSuffix
 # Generate Report
 GenerateReport -FileSuffix $executionFileSuffix
 
-remove-item C:\diskspd\*.xml -Force
+#remove-item C:\diskspd\*.xml -Force
