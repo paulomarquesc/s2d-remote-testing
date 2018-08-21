@@ -311,7 +311,7 @@ function GenerateReport
         [uint64]$WriteMBps = ($WriteBytes / $TotalTimeInSec) / 1024 / 1024
         [uint64]$IOPs = $IOCount / $TotalTimeInSec
 
-        $report += New-Object -TypeName ReportCompute -Property @{"ComputerName" = $ComputerName; `
+        $report += New-Object -TypeName PSObject -Property @{"ComputerName" = $ComputerName; `
                                                              "TestPath" = $TestPath; `
                                                              "TotalTimeInSec" =  $TotalTimeInSec; `
                                                              "IOCount" = $IOCount; `
@@ -334,7 +334,7 @@ function GenerateReport
 
     }
 
-    $report += New-Object -TypeName ReportTotal -Property @{"ComputerName" = "TOTAL=>"; `
+    $report += New-Object -TypeName PSObject -Property @{"ComputerName" = "TOTAL=>"; `
                                                          "TestPath" = ""; `
                                                          "TotalTimeInSec" =  $TotalTimeInSec; `
                                                          "IOCount" = $TotalIOCount; `
