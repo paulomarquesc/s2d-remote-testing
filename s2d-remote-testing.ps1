@@ -225,6 +225,25 @@ function CollectReports
     } 
 }
 
+function CleanUpReports
+{
+    param
+    (
+        $clients,
+        $diskSpdFolder="diskspd"
+    )
+
+    foreach ($client in $clients)
+    {
+        $reportFiles = Get-ChildItem -Path "\\$client\c$\$diskSpdFolder\$client-*.xml"
+    
+        foreach ($file in $reportFiles)
+        {
+            Remove-Item -Path $file.FullName -Force
+        }
+    }
+}
+
 function GenerateReport
 {
     param
@@ -269,7 +288,7 @@ function GenerateReport
         [uint64]$WriteMBps = ($WriteBytes / $TotalTimeInSec) / 1024 / 1024
         [uint64]$IOPs = $IOCount / $TotalTimeInSec
 
-        $report += New-Object -TypeName PSObject -Property @{"ComputerName" = $ComputerName; `
+        $report += New-Object -TypeName ReportCompute -Property @{"ComputerName" = $ComputerName; `
                                                              "TestPath" = $TestPath; `
                                                              "TotalTimeInSec" =  $TotalTimeInSec; `
                                                              "IOCount" = $IOCount; `
@@ -292,7 +311,7 @@ function GenerateReport
 
     }
 
-    $report += New-Object -TypeName PSObject -Property @{"ComputerName" = "TOTAL=>"; `
+    $report += New-Object -TypeName ReportTotal -Property @{"ComputerName" = "TOTAL=>"; `
                                                          "TestPath" = ""; `
                                                          "TotalTimeInSec" =  $TotalTimeInSec; `
                                                          "IOCount" = $TotalIOCount; `
@@ -308,6 +327,10 @@ function GenerateReport
 }
 
 $ErrorActionPreference = "Stop"
+
+# Cleaning up any oustanding jobs
+Get-Job | Stop-Job
+Get-Job | Remove-Job
 
 # Clients
 
@@ -326,12 +349,18 @@ $url = "https://raw.githubusercontent.com/paulomarquesc/s2d-remote-testing/maste
 # Folder to store (don't add drive, it is hardcoded to c:\)
 $localDiskSpdFolder = "diskSpd"
 
+# SOFS Share
+$share="\\s2d-sofs\Share01"
+
 # Getting random suffix
 $executionFileSuffix = GetRandomSuffixString
 Write-Verbose "Working with file suffix $executionFileSuffix" -Verbose
 
 # Getting Domain Admin credentials
 $creds = Get-Credential
+
+# Cleaning up old reports from clients
+CleanUpReports -clients $clients -diskSpdFolder "diskspd"
 
 #--------
 # Uncomment line below to enable CredSSP on all VMs listed in -clients parameter
@@ -362,7 +391,8 @@ $creds = Get-Credential
 #--------------
 # All Clients Testing
 # Xml report
-RunDiskSpd -clients $clients -diskSpdParameters "-c10G -d30 -o3 -r -w100 -t12 -b1M -Sh -W20 -C45 -Rxml \\s2d-sofs\Share01" -credential $creds -diskSpdFolder $localDiskSpdFolder -FileSuffix $executionFileSuffix
+$diskSpeedCommandLine = "-c10G -d30 -o3 -r -w100 -t12 -b2M -Sh -W20 -C45 -Rxml \\s2d-sofs\Share01"
+RunDiskSpd -clients $clients -diskSpdParameters $diskSpeedCommandLine -credential $creds -diskSpdFolder $localDiskSpdFolder -FileSuffix $executionFileSuffix
 # Collect Report
 CollectReports -clients $clients -FileSuffix $executionFileSuffix -destination "C:\diskspd"
 
