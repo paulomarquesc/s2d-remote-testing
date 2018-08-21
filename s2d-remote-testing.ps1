@@ -192,7 +192,10 @@ function RunDiskSpd
 
             & "c:\$diskSpdFolder\DiskSpd.exe" $args | out-file $reportFile
 
-        } -ArgumentList $parameters, $diskSpdFolder, $FileSuffix -Authentication Credssp -Credential $credential
+            # Wait 5 minutes
+            Start-Sleep (get-random -Minimum 100 -Maximum 300)
+
+        } -ArgumentList $parameters, $diskSpdFolder, $FileSuffix -Authentication Credssp -Credential $credential -EnableNetworkAccess
     }
 
     $clients | % {Start-Job -Scriptblock $sb -ArgumentList $_, $diskSpdParameters, $creds, $diskSpdFolder, $FileSuffix }
@@ -205,7 +208,7 @@ function CollectReports
     (
         $clients,
         $diskSpdFolder="diskspd",
-        $destination=".",
+        $destination,
         $FileSuffix
     )
 
@@ -312,7 +315,7 @@ $ErrorActionPreference = "Stop"
 $AllServers = @("client-1","client-2","client-3","client-4","client-5","client-6","client-7","client-8","client-9","client-10","jumpbox","s2d-node-1","s2d-node-2","s2d-node-3")
 
 # All VMs acting as Clientes
-$Clients = @("client-1","client-2","client-3","client-4","client-5","client-6","client-7","client-8","client-9","client-10")
+$Clients = @("client-1","client-2","client-3","client-4","client-5","client-6","client-7","client-8")
 
 # Domain Name
 $domainName = "sofs.local"
@@ -352,16 +355,16 @@ $creds = Get-Credential
 #--------------
 # 1 Client Testing
 # Xml report
-#RunDiskSpd -clients "client-5" -diskSpdParameters "-c10G -d10 -r -w100 -t12 -b8M -h -L -Rxml \\s2d-sofs\Share01" -credential $creds -diskSpdFolder $localDiskSpdFolder -FileSuffix $executionFileSuffix
+#RunDiskSpd -clients "client-5" -diskSpdParameters "-c10G -d10 -r -w100 -t12 -b8M -Sh -Rxml \\s2d-sofs\Share01" -credential $creds -diskSpdFolder $localDiskSpdFolder -FileSuffix $executionFileSuffix
 # Collect Report
 #CollectReports -clients "client-5" -FileSuffix $executionFileSuffix -destination "C:\diskspd"
 
 #--------------
 # All Clients Testing
 # Xml report
-RunDiskSpd -clients $clients -diskSpdParameters "-c500G -d10 -r -w100 -t12 -b8M -h -L -Rxml \\s2d-sofs\Share01" -credential $creds -diskSpdFolder $localDiskSpdFolder -FileSuffix $executionFileSuffix
+RunDiskSpd -clients $clients -diskSpdParameters "-c10G -d30 -o3 -r -w100 -t12 -b1M -Sh -W20 -C45 -Rxml \\s2d-sofs\Share01" -credential $creds -diskSpdFolder $localDiskSpdFolder -FileSuffix $executionFileSuffix
 # Collect Report
-CollectReports -clients $clients -FileSuffix $executionFileSuffix
+CollectReports -clients $clients -FileSuffix $executionFileSuffix -destination "C:\diskspd"
 
 # Generate Report
 GenerateReport -reportsFolder "C:\diskspd" -FileSuffix $executionFileSuffix
