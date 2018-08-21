@@ -237,7 +237,7 @@ function CollectReports
 
         if (test-path $file)
         {
-            Copy-Item -Path $file -Destination $destination
+            Copy-Item -Path $file -Destination "c:\$destination"
         }
 
         #remove-item $file -force
@@ -361,7 +361,7 @@ Get-Job | Remove-Job
 $AllServers = @("client-1","client-2","client-3","client-4","client-5","client-6","client-7","client-8","client-9","client-10","jumpbox","s2d-node-1","s2d-node-2","s2d-node-3")
 
 # All VMs acting as Clientes
-$Clients = @("client-1","client-2","client-3","client-4","client-5","client-6","client-7","client-8")
+$Clients = @("client-1","client-2","client-3","client-4","client-5")
 
 # Domain Name
 $domainName = "sofs.local"
@@ -370,7 +370,7 @@ $domainName = "sofs.local"
 $url = "https://raw.githubusercontent.com/paulomarquesc/s2d-remote-testing/master"
 
 # Folder to store (don't add drive, it is hardcoded to c:\)
-$localDiskSpdFolder = "diskSpd"
+$diskSpdFolder = "diskSpd"
 
 # SOFS Share
 $share="\\s2d-sofs\Share01"
@@ -380,10 +380,10 @@ $executionFileSuffix = GetRandomSuffixString
 Write-Verbose "Working with file suffix $executionFileSuffix" -Verbose
 
 # Getting Domain Admin credentials
-$creds = Get-Credential
+#$creds = Get-Credential
 
 # Cleaning up old reports from clients
-CleanUpReports -clients $clients -diskSpdFolder "diskspd"
+#CleanUpReports -clients $clients -diskSpdFolder "diskspd"
 
 #--------
 # Uncomment line below to enable CredSSP on all VMs listed in -clients parameter
@@ -407,20 +407,20 @@ CleanUpReports -clients $clients -diskSpdFolder "diskspd"
 #--------------
 # 1 Client Testing
 # Xml report
-#RunDiskSpd -clients "client-5" -diskSpdParameters "-c10G -d10 -r -w100 -t12 -b8M -Sh -Rxml \\s2d-sofs\Share01" -credential $creds -diskSpdFolder $localDiskSpdFolder -FileSuffix $executionFileSuffix
+#RunDiskSpd -clients "client-5" -diskSpdParameters "-c10G -d10 -r -w100 -t12 -b8M -Sh -Rxml \\s2d-sofs\Share01" -credential $creds -diskSpdFolder $DiskSpdFolder -FileSuffix $executionFileSuffix
 # Collect Report
-#CollectReports -clients "client-5" -FileSuffix $executionFileSuffix -destination $localDiskSpdFolder"
+#CollectReports -clients "client-5" -FileSuffix $executionFileSuffix -destination $DiskSpdFolder"
 
 #--------------
 # All Clients Testing
 # Xml report
-$diskSpeedCommandLine = "-c10G -d30 -o3 -r -w100 -t12 -b2M -Sh -W20 -C45 -Rxml \\s2d-sofs\Share01"
-RunDiskSpd -clients $clients -diskSpdParameters $diskSpeedCommandLine -credential $creds -diskSpdFolder $localDiskSpdFolder -FileSuffix $executionFileSuffix
+#$diskSpeedCommandLine = "-c10G -d30 -r -w100 -t12 -b8M -Sh -W20 -C45 -Rxml \\s2d-sofs\Share01"
+#RunDiskSpd -clients $clients -diskSpdParameters $diskSpeedCommandLine -credential $creds -diskSpdFolder $DiskSpdFolder -FileSuffix $executionFileSuffix
 # Collect Report
-CollectReports -clients $clients -FileSuffix $executionFileSuffix -destination $localDiskSpdFolder
+#CollectReports -clients $clients -FileSuffix $executionFileSuffix -destination $DiskSpdFolder
 
 # Generate Report
-GenerateReport -reportsFolder $localDiskSpdFolder -FileSuffix $executionFileSuffix
+GenerateReport -reportsFolder $DiskSpdFolder -FileSuffix $executionFileSuffix
 
 # If execution fails, remember to run line below anyways, this will delete local copies of the reports
 #remove-item C:\diskspd\*.xml -Force
