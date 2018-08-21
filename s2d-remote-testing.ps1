@@ -79,6 +79,8 @@ function EnableCredSSP
             Enable-WSManCredSSP -Role Client -DelegateComputer "*.$domainName" -Force
             Enable-WSManCredSSP -Role Client -DelegateComputer $clientList -Force
 
+            #Restart-Computer -Force
+
         } -ArgumentList $domainName, $clientList 
     }
 
@@ -110,29 +112,34 @@ function DownLoadDiskSpd
     param
     (
         $clients,
-        $diskSpdFolder="diskspd"
+        $diskSpdFolder="diskspd",
+        $url
     )
 
     $sb = {
-        param(
+        param
+        (
             $client,
-            $diskSpdFolder)
+            $diskSpdFolder,
+            $url
+        )
     
         Invoke-Command $client {
             param
             (
-                $diskSpdFolder="diskspd"
+                $diskSpdFolder="diskspd",
+                $url
             )
 
            mkdir "c:\$diskSpdFolder\" -force 
-           $url = "https://pmcstorage01.blob.core.windows.net/public/diskspd.exe"
+           $url = "$URL/diskspd.exe"
            $output = "c:\$diskSpdFolder\diskspd.exe"
            Start-BitsTransfer -Source $url -Destination $output
 
-        } -ArgumentList $diskSpdFolder
+        } -ArgumentList $diskSpdFolder, $url
     }
 
-    $clients | % {Start-Job -Scriptblock $sb -ArgumentList $_, $diskSpdFolder }
+    $clients | % {Start-Job -Scriptblock $sb -ArgumentList $_, $diskSpdFolder, $url }
     Get-Job | Wait-Job | Receive-Job
 }
 
@@ -211,7 +218,7 @@ function CollectReports
             Copy-Item -Path $file -Destination $destination
         }
 
-        remove-item $file -force
+        #remove-item $file -force
     } 
 }
 
@@ -219,10 +226,11 @@ function GenerateReport
 {
     param
     (
-        $reportsFolder="c:\diskspd"
+        $reportsFolder="c:\diskspd",
+        $FileSuffix
     )
-
-    $reportFiles = Get-ChildItem -Path $reportsFolder -Filter "*.xml"
+    
+    $reportFiles = Get-ChildItem -Path (join-path $reportsFolder "*$FileSuffix.xml")
     
     $report = @()
 
@@ -296,45 +304,67 @@ function GenerateReport
 
 }
 
-
+$ErrorActionPreference = "Stop"
 
 # Clients
 
-$clients = @("client-1","client-2","client-3","client-4","client-5","client-6","client-7","client-8","client-9","client-10")
+# All VMs to enable CredSSP (must include jumpboxes, clients and S2D Cluster Node server
+$AllServers = @("client-1","client-2","client-3","client-4","client-5","client-6","client-7","client-8","client-9","client-10","jumpbox","s2d-node-1","s2d-node-2","s2d-node-3")
+
+# All VMs acting as Clientes
+$Clients = @("client-1","client-2","client-3","client-4","client-5","client-6","client-7","client-8","client-9","client-10")
+
+# Domain Name
 $domainName = "sofs.local"
+
+# DiskSpd URL download, must be the URL that has the .exe file which is already hardcoded, e.g. a Storage Account: https://mystorage.blob.core.windows.net/public
+$url = "https://raw.githubusercontent.com/paulomarquesc/s2d-remote-testing/master"
+
+# Folder to store (don't add drive, it is hardcoded to c:\)
 $localDiskSpdFolder = "diskSpd"
 
+# Getting random suffix
 $executionFileSuffix = GetRandomSuffixString
+Write-Verbose "Working with file suffix $executionFileSuffix" -Verbose
 
-#$secpasswd = ConvertTo-SecureString "" -AsPlainText -Force
-#$creds = New-Object System.Management.Automation.PSCredential ("sofs\pmcadmin", $secpasswd)
-
+# Getting Domain Admin credentials
 $creds = Get-Credential
 
-#EnableCredSSP -clients $clients -domainName $domainName 
+#--------
+# Uncomment line below to enable CredSSP on all VMs listed in -clients parameter
+#--------
+#EnableCredSSP -clients $AllServers -domainName $domainName 
+
+#--------
+# Uncomment line below to add Firewall exceptions for "File and Print Sharing" ports on Windows firewall of VMs acting as clients
+#--------
 #AllowFileServerServicesOnClients -clients $clients
-#GenerateFiles -clients $clients -FileSuffix $executionFileSuffix
-#DownLoadDiskSpd -clients $clients -diskSpdFolder "diskspd"
 
-#------
-# Notice that the file path on DiskSpd must be only up to the folder leve, the file name will be randomized
-#------
+#--------
+# Uncomment line below to add Firewall exceptions for "File and Print Sharing" ports on Windows firewall of VMs acting as clients
+#--------
+#DownLoadDiskSpd -clients $clients -diskSpdFolder "diskspd" -url $url
+
+#
+# Notice that the file path on DiskSpd must be only up to the folder level, the file name will be randomized
+#
 
 #--------------
-# 1 Client
+# 1 Client Testing
 # Xml report
-#RunDiskSpd -clients "client-1" -diskSpdParameters "-c500G -d10 -r -w100 -t12 -b8M -h -L -Rxml \\s2d-sofs\Share01\testfile01.dat" -credential $creds -diskSpdFolder $localDiskSpdFolder -FileSuffix $executionFileSuffix
+#RunDiskSpd -clients "client-5" -diskSpdParameters "-c10G -d10 -r -w100 -t12 -b8M -h -L -Rxml \\s2d-sofs\Share01" -credential $creds -diskSpdFolder $localDiskSpdFolder -FileSuffix $executionFileSuffix
 # Collect Report
-#CollectReports -clients "client-1" 
+#CollectReports -clients "client-5" -FileSuffix $executionFileSuffix -destination "C:\diskspd"
 
 #--------------
-# All Clients
+# All Clients Testing
 # Xml report
 RunDiskSpd -clients $clients -diskSpdParameters "-c500G -d10 -r -w100 -t12 -b8M -h -L -Rxml \\s2d-sofs\Share01" -credential $creds -diskSpdFolder $localDiskSpdFolder -FileSuffix $executionFileSuffix
 # Collect Report
 CollectReports -clients $clients -FileSuffix $executionFileSuffix
 
 # Generate Report
-GenerateReport -FileSuffix $executionFileSuffix
+GenerateReport -reportsFolder "C:\diskspd" -FileSuffix $executionFileSuffix
 
+# If execution fails, remember to run line below anyways, this will delete local copies of the reports
 #remove-item C:\diskspd\*.xml -Force
