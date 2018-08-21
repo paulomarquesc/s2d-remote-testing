@@ -366,7 +366,9 @@ Get-Job | Remove-Job
 $AllServers = @("client-1","client-2","client-3","client-4","client-5","client-6","client-7","client-8","client-9","client-10","jumpbox","s2d-node-1","s2d-node-2","s2d-node-3","s2d-node-4","s2d-node-5","s2d-node-6","s2d-node-7","s2d-node-8","s2d-node-9","s2d-node-10","s2d-node-11","s2d-node-12","s2d-node-13","s2d-node-14","s2d-node-15","s2d-node-16")
 
 # All VMs acting as Clientes
-$Clients = @("client-1","client-2","client-3","client-4","client-5","client-6","client-7","client-8","client-9","client-10")
+#$Clients = @("client-1","client-2","client-3","client-4","client-5","client-6","client-7","client-8","client-9","client-10")
+#$Clients = @("client-1","client-2","client-3","client-4","client-5")
+$Clients = @("client-1","client-2","client-3")
 
 # Domain Name
 $domainName = "sofs.local"
@@ -375,7 +377,7 @@ $domainName = "sofs.local"
 $url = "https://raw.githubusercontent.com/paulomarquesc/s2d-remote-testing/master"
 
 # Folder to store (don't add drive, it is hardcoded to c:\)
-$localDiskSpdFolder = "diskSpd"
+$DiskSpdFolder = "diskSpd"
 
 # SOFS Share
 $share="\\s2d-sofs\Share01"
@@ -385,10 +387,10 @@ $executionFileSuffix = GetRandomSuffixString
 Write-Verbose "Working with file suffix $executionFileSuffix" -Verbose
 
 # Getting Domain Admin credentials
-#$creds = Get-Credential
+$creds = Get-Credential
 
 # Cleaning up old reports from clients
-#CleanUpReports -clients $clients -diskSpdFolder "diskspd"
+CleanUpReports -clients $clients -diskSpdFolder "diskspd"
 
 #--------
 # Uncomment line below to enable CredSSP on all VMs listed in -clients parameter
